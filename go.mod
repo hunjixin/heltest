@@ -1,4 +1,4 @@
-module github.com/hunjixin/heltest
+module github.com/hunjixin/venustest
 
 go 1.16
 
