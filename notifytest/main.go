@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/filecoin-project/go-jsonrpc"
 	"github.com/filecoin-project/venus/app/client"
+	"github.com/filecoin-project/venus/pkg/chain"
 	"github.com/urfave/cli"
 	"log"
 	"net/http"
@@ -20,13 +20,13 @@ func main() {
 		EnableBashCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "token",
-				Usage: "token for access venus",
-			},
-			&cli.StringFlag{
 				Name:  "duration",
 				Usage: "time for test",
 				Value: "5m",
+			},
+			&cli.StringFlag{
+				Name:  "token",
+				Usage: "token for access venus",
 			},
 		},
 	}
@@ -56,17 +56,25 @@ func run(cctx *cli.Context) error {
 		return err
 	}
 	ctx, _ = context.WithTimeout(ctx, du)
-	for {
-		t := time.Now()
-		_, err := node.ChainHead(ctx)
-		if err != nil {
-			fmt.Println("cannt connect to venus")
-		}
-		fmt.Println("connect success", time.Now().Sub(t))
-		select {
-		case <-time.After(time.Second):
-		case <-ctx.Done():
-			return errors.New("exit command")
+
+	notifs := node.ChainNotify(ctx)
+
+	hccurrent := <-notifs
+	log.Println(fmt.Sprintf("recieve hc current event height %d", hccurrent[0].Val.Height()))
+	for notif := range notifs {
+		for _, event := range notif {
+			if event.Type == chain.HCApply {
+				log.Println("receive event ", event.Type, event.Val.Height())
+				for _, blk := range event.Val.Blocks() {
+					_, err := node.ChainGetBlockMessages(ctx, blk.Cid())
+					if err != nil {
+						log.Fatal(err)
+					} else {
+						log.Println("get block message successfully")
+					}
+				}
+			}
 		}
 	}
+	return nil
 }
