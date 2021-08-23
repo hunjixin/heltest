@@ -25,6 +25,11 @@ func main() {
 				Value: "5m",
 			},
 			&cli.StringFlag{
+				Name:  "wait",
+				Usage: "wait time to test websockets",
+				Value: "1m",
+			},
+			&cli.StringFlag{
 				Name:  "token",
 				Usage: "token for access venus",
 			},
@@ -57,6 +62,17 @@ func run(cctx *cli.Context) error {
 	}
 	ctx, _ = context.WithTimeout(ctx, du)
 
+	head, err := node.ChainHead(ctx)
+	if err != nil {
+		return err
+	}
+	log.Println("receive head head", head.String())
+
+	wait, err := time.ParseDuration(cctx.String("wait"))
+	if err != nil {
+		return err
+	}
+	time.Sleep(wait)
 	notifs := node.ChainNotify(ctx)
 
 	hccurrent := <-notifs
