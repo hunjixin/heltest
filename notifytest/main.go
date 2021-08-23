@@ -15,8 +15,8 @@ import (
 
 func main() {
 	app := &cli.App{
-		Name:                 "force-batch-committer",
-		Usage:                "Filecoin batch precommit/commit client",
+		Name:                 "notifytest",
+		Usage:                "notifytest",
 		EnableBashCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
