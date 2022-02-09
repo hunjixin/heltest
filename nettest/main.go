@@ -57,7 +57,7 @@ func run(cctx *cli.Context) error {
 	headers.Add("Authorization", "Bearer "+token)
 
 	var node v1.FullNodeStruct
-	closer, err := jsonrpc.NewMergeClient(ctx, url, "Filecoin", api.GetInternalStructs(&node), headers, jsonrpc.WithRetry(true), jsonrpc.WithReconnectBackoff(time.Second*200, time.Minute))
+	closer, err := jsonrpc.NewMergeClient(ctx, url, "Filecoin", api.GetInternalStructs(&node), headers, jsonrpc.WithRetry(true), jsonrpc.WithReconnectBackoff(time.Millisecond*100, time.Second*10))
 	if err != nil {
 		return err
 	}
