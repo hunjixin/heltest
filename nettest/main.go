@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/filecoin-project/go-jsonrpc"
-	"github.com/filecoin-project/venus/app/client"
+	"github.com/filecoin-project/venus/venus-shared/api"
+	v1 "github.com/filecoin-project/venus/venus-shared/api/chain/v1"
+	logging "github.com/ipfs/go-log/v2"
 	"github.com/urfave/cli"
 	"log"
 	"net/http"
@@ -14,14 +16,21 @@ import (
 )
 
 func main() {
+	logging.SetLogLevel("*", "debug")
 	app := &cli.App{
 		Name:                 "net test",
 		Usage:                "nettest",
 		EnableBashCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "token",
-				Usage: "token for access venus",
+				Name:     "url",
+				Usage:    "url for access venus",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "token",
+				Usage:    "token for access venus",
+				Required: true,
 			},
 			&cli.StringFlag{
 				Name:  "duration",
@@ -39,23 +48,29 @@ func main() {
 }
 
 func run(cctx *cli.Context) error {
+	url := cctx.String("url")
 	token := cctx.String("token")
 	//try to connect venus
 	ctx := context.Background()
-	node := client.FullNodeStruct{}
+
 	headers := http.Header{}
 	headers.Add("Authorization", "Bearer "+token)
-	closer, err := jsonrpc.NewClient(ctx, "wss://node.filincubator.com:81/rpc/v1", "Filecoin", &node, headers)
+
+	var node v1.FullNodeStruct
+	closer, err := jsonrpc.NewMergeClient(ctx, url, "Filecoin", api.GetInternalStructs(&node), headers, jsonrpc.WithRetry(true), jsonrpc.WithReconnectBackoff(time.Second*200, time.Minute))
 	if err != nil {
 		return err
 	}
 	defer closer()
 
-	du, err := time.ParseDuration(cctx.String("duration"))
-	if err != nil {
-		return err
+	if cctx.IsSet("duration") {
+		du, err := time.ParseDuration(cctx.String("duration"))
+		if err != nil {
+			return err
+		}
+		ctx, _ = context.WithTimeout(ctx, du)
 	}
-	ctx, _ = context.WithTimeout(ctx, du)
+
 	for {
 		t := time.Now()
 		_, err := node.ChainHead(ctx)
@@ -64,7 +79,7 @@ func run(cctx *cli.Context) error {
 		}
 		fmt.Println("connect success", time.Now().Sub(t))
 		select {
-		case <-time.After(time.Second):
+		case <-time.After(5 * time.Second):
 		case <-ctx.Done():
 			return errors.New("exit command")
 		}

@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/go-jsonrpc"
-	"github.com/filecoin-project/venus/app/client"
 	"github.com/filecoin-project/venus/pkg/chain"
+
+	"github.com/filecoin-project/venus/venus-shared/api/client"
 	"github.com/urfave/cli"
 	"log"
 	"net/http"
@@ -30,8 +30,14 @@ func main() {
 				Value: "1m",
 			},
 			&cli.StringFlag{
-				Name:  "token",
-				Usage: "token for access venus",
+				Name:     "url",
+				Usage:    "url for access venus",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "token",
+				Usage:    "token for access venus",
+				Required: true,
 			},
 		},
 	}
@@ -44,13 +50,13 @@ func main() {
 }
 
 func run(cctx *cli.Context) error {
+	url := cctx.String("url")
 	token := cctx.String("token")
 	//try to connect venus
 	ctx := context.Background()
-	node := client.FullNodeStruct{}
 	headers := http.Header{}
 	headers.Add("Authorization", "Bearer "+token)
-	closer, err := jsonrpc.NewClient(ctx, "wss://node.filincubator.com:81/rpc/v1", "Filecoin", &node, headers)
+	node, closer, err := client.NewFullRPCV1(ctx, url, headers)
 	if err != nil {
 		return err
 	}
@@ -73,7 +79,10 @@ func run(cctx *cli.Context) error {
 		return err
 	}
 	time.Sleep(wait)
-	notifs := node.ChainNotify(ctx)
+	notifs, err := node.ChainNotify(ctx)
+	if err != nil {
+		return err
+	}
 
 	hccurrent := <-notifs
 	log.Println(fmt.Sprintf("recieve hc current event height %d", hccurrent[0].Val.Height()))
