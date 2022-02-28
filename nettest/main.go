@@ -11,11 +11,17 @@ import (
 	"github.com/urfave/cli"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
 
 func main() {
+	go func() {
+		//start pprof
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
+
 	logging.SetLogLevel("*", "debug")
 	app := &cli.App{
 		Name:                 "net test",

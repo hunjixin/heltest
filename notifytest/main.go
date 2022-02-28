@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/filecoin-project/venus/pkg/chain"
+	"github.com/filecoin-project/venus/venus-shared/types"
 
-	"github.com/filecoin-project/venus/venus-shared/api/client"
+	v1 "github.com/filecoin-project/venus/venus-shared/api/chain/v1"
 	"github.com/urfave/cli"
 	"log"
 	"net/http"
@@ -56,7 +56,7 @@ func run(cctx *cli.Context) error {
 	ctx := context.Background()
 	headers := http.Header{}
 	headers.Add("Authorization", "Bearer "+token)
-	node, closer, err := client.NewFullRPCV1(ctx, url, headers)
+	node, closer, err := v1.NewFullNodeRPC(ctx, url, headers)
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func run(cctx *cli.Context) error {
 	log.Println(fmt.Sprintf("recieve hc current event height %d", hccurrent[0].Val.Height()))
 	for notif := range notifs {
 		for _, event := range notif {
-			if event.Type == chain.HCApply {
+			if event.Type == types.HCApply {
 				log.Println("receive event ", event.Type, event.Val.Height())
 				for _, blk := range event.Val.Blocks() {
 					_, err := node.ChainGetBlockMessages(ctx, blk.Cid())
