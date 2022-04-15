@@ -9,4 +9,4 @@ require (
 	github.com/urfave/cli v1.22.2
 )
 
-replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20220228024820-787a8c03319b
+replace github.com/filecoin-project/go-jsonrpc => github.com/ipfs-force-community/go-jsonrpc v0.1.4-0.20220415135220-7234365e4cdd
